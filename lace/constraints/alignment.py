@@ -14,13 +14,16 @@ def layout_alignment_matrix(bbox: torch.Tensor, mask: torch.Tensor) -> torch.Ten
     Returns:
         torch.Tensor: Alignment matrix.
     """
-
     bbox = rearrange(bbox, "b n c -> c b n")
     xl, yt, xr, yb = xywh_to_ltrb_split(bbox)
     xc, yc = bbox[0], bbox[1]
 
-    X = rearrange([xl, xc, xr, yt, yc, yb], "n b c -> b n c")
+    X: torch.Tensor = rearrange(
+        [xl, xc, xr, yt, yc, yb],  # type: ignore
+        "n b c -> b n c",
+    )
     X = X.unsqueeze(-1) - X.unsqueeze(-2)
+
     idx = torch.arange(X.size(2), device=X.device)
     X[:, :, idx, idx] = 1.0
 

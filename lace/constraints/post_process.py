@@ -21,7 +21,7 @@ class PostProcessOutput(object):
     loss: Optional[torch.Tensor] = None
 
 
-@torch.enable_grad
+@torch.enable_grad()
 def post_process(
     bbox: torch.Tensor,
     mask: torch.Tensor,
