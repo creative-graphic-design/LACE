@@ -1,5 +1,7 @@
 # Towards Aligned Layout Generation via Diffusion Model with Aesthetic Constraints
 
+[![CI](https://github.com/creative-graphic-design/LACE/actions/workflows/ci.yaml/badge.svg)](https://github.com/creative-graphic-design/LACE/actions/workflows/ci.yaml)
+
 ## Installation
 
 ```shell
