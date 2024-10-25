@@ -89,7 +89,7 @@ def post_process(
         disable=disable_progress_bar,
         dynamic_ncols=True,
     ) as pbar:
-        for _ in range(max_iterations):
+        for i in range(max_iterations):
             bbox_1 = torch.relu(bbox_p)
             align_score_target = layout_alignment_matrix(bbox_1, mask)
             align_mask = (align_score_target < ali_threshold).clone().detach()
@@ -103,14 +103,14 @@ def post_process(
             aux_loss = w_a * align_loss + w_o * piou
             loss = mse_loss + aux_loss
 
-            pbar.set_postfix(
-                {
-                    "mse": mse_loss.item(),
-                    "ali": align_loss.item(),
-                    "ove": piou.item(),
-                    "total": loss.item(),
-                }
+            msg = (
+                f"mse: {mse_loss.item():.7f}, "
+                f"ali: {align_loss.item():.7f}, ove: {piou.item():.7f}, "
+                f"total: {loss.item():.7f}"
             )
+            pbar.set_postfix_str(msg)
+            logger.debug(msg)
+
             optimizer.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_([bbox_p], 1.0)
