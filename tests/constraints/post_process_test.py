@@ -35,7 +35,14 @@ def set_seed(seed: int) -> None:
     torch.backends.cudnn.benchmark = False
 
 
-def test_post_process(batch_size: int, max_bboxes: int, device: torch.device):
+@pytest.mark.parametrize(argnames="store_history", argvalues=(True, False))
+def test_post_process(
+    batch_size: int,
+    max_bboxes: int,
+    device: torch.device,
+    store_history: bool,
+    expected_loss: float = 0.0040787,
+):
     def create_random_bbox(device: torch.device, max_bboxes: int) -> torch.Tensor:
         # shape: (batch_size, max_bboxes)
         x = torch.rand(batch_size, max_bboxes)
@@ -80,8 +87,12 @@ def test_post_process(batch_size: int, max_bboxes: int, device: torch.device):
         max_bboxes=max_bboxes,
         device=device,
     )
-    output = lace.post_process(bbox=bbox, mask=mask)
-
-    assert output.loss is not None and math.isclose(
-        output.loss.item(), 0.0040787, rel_tol=1e-5
+    output = lace.post_process(
+        bbox=bbox,
+        mask=mask,
+        store_history=store_history,
     )
+    assert output.loss is not None
+
+    actual_loss = output.loss.item()
+    assert math.isclose(actual_loss, expected_loss, rel_tol=1e-5)
