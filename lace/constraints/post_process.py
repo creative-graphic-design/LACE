@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -16,9 +16,19 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class PostProcessOutput(object):
+    """Output of the post-processing optimization.
+
+    Args:
+        bbox: Optimized bounding boxes.
+        mask: Mask of bounding boxes.
+        loss: Loss of the optimization.
+        history: History of bbox optimization
+    """
+
     bbox: torch.Tensor
     mask: torch.Tensor
     loss: Optional[torch.Tensor] = None
+    history: Optional[List[torch.Tensor]] = None
 
 
 @torch.enable_grad()
@@ -35,6 +45,7 @@ def post_process(
     adam_betas: Tuple[float, float] = (0.9, 0.999),
     adam_eps: float = 1e-08,
     disable_progress_bar: bool = False,
+    store_history: bool = False,
 ) -> PostProcessOutput:
     """LACE's post-processing optimization for bounding boxes.
 
@@ -50,6 +61,8 @@ def post_process(
         weight_decay: Weight decay for the optimizer.
         adam_betas: Betas for the Adam optimizer.
         adam_eps: Epsilon for the Adam optimizer.
+        disable_progress_bar: Disable progress bar.
+        store_history: Store the history of the optimization.
 
     Returns:
         PostProcessOutput: Optimized bounding boxes, mask, and loss
@@ -83,13 +96,15 @@ def post_process(
         amsgrad=False,
     )
 
+    optim_history: List[torch.Tensor] = []
+
     with tqdm(
         total=max_iterations,
         desc="Perform LACE's post-processing optimization",
         disable=disable_progress_bar,
         dynamic_ncols=True,
     ) as pbar:
-        for i in range(max_iterations):
+        for _ in range(max_iterations):
             bbox_1 = torch.relu(bbox_p)
             align_score_target = layout_alignment_matrix(bbox_1, mask)
             align_mask = (align_score_target < ali_threshold).clone().detach()
@@ -121,8 +136,14 @@ def post_process(
 
             pbar.update()
 
-    bbox_out = torch.relu(bbox_p)
-    bbox_out[:, :, [0, 2]] *= 4 / 10
-    bbox_out[:, :, [1, 3]] *= 6 / 10
+            bbox_out = torch.relu(bbox_p)
+            bbox_out[:, :, [0, 2]] *= 4 / 10
+            bbox_out[:, :, [1, 3]] *= 6 / 10
+            optim_history.append(bbox_out)
 
-    return PostProcessOutput(bbox=bbox_out, mask=mask, loss=loss)
+    return PostProcessOutput(
+        bbox=optim_history[-1],
+        mask=mask,
+        loss=loss,
+        history=optim_history if store_history else None,
+    )
