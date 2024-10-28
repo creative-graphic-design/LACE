@@ -10,7 +10,8 @@ pip install git+https://github.com/creative-graphic-design/LACE
 
 ---
 source code of the layout generation model, [LACE](https://arxiv.org/abs/2402.04754).
-![image](git_demo.png)
+![image](https://raw.githubusercontent.com/puar-playground/LACE/refs/heads/main/git_demo.png)
+
 ## 1. Installation
 ### 1.1 Prepare environment
 Install package for python 3.9 or later version:
